@@ -1,0 +1,134 @@
+import tkinter as tk
+from math import pi, sin, cos
+
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+INITIAL_N_SPOKES = 8
+INITIAL_RADIUS = 50
+INITIAL_SPEED = 1
+
+
+class WheelApp:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.canvas = tk.Canvas(self.root, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
+        self.canvas.pack()
+
+        self.n_spokes_var = tk.IntVar(value=INITIAL_N_SPOKES)
+        self.radius_var = tk.DoubleVar(value=INITIAL_RADIUS)
+        self.speed_var = tk.DoubleVar(value=INITIAL_SPEED)
+
+        self.create_controls()
+
+        self.wheel_center_x = WINDOW_WIDTH // 2
+        self.wheel_center_y = WINDOW_HEIGHT // 2
+        self.wheel_radius = INITIAL_RADIUS
+        self.n_spokes = INITIAL_N_SPOKES
+        self.speed = INITIAL_SPEED
+        self.angle = 0
+        self.time = 0
+
+        self.animation_id = None
+
+    def create_controls(self):
+        control_frame = tk.Frame(self.root)
+        control_frame.pack(side=tk.LEFT, fill=tk.Y)
+
+        tk.Label(control_frame, text="Количество спиц:").pack()
+        spinbox_n_spokes = tk.Spinbox(
+            control_frame,
+            from_=3,
+            to=20,
+            increment=1,
+            textvariable=self.n_spokes_var,
+            command=lambda: self.update_wheel(),
+        )
+        spinbox_n_spokes.pack(pady=(5, 10))
+
+        tk.Label(control_frame, text="Радиус колеса:").pack()
+        slider_radius = tk.Scale(
+            control_frame,
+            from_=10,
+            to=100,
+            resolution=1,
+            orient=tk.HORIZONTAL,
+            variable=self.radius_var,
+            command=lambda value: self.update_wheel(),
+        )
+        slider_radius.pack(fill=tk.X, padx=10, pady=(5, 10))
+
+        tk.Label(control_frame, text="Скорость вращения:").pack()
+        slider_speed = tk.Scale(
+            control_frame,
+            from_=0.01,
+            to=5,
+            resolution=0.01,
+            orient=tk.HORIZONTAL,
+            variable=self.speed_var,
+            command=lambda value: self.update_wheel(),
+        )
+        slider_speed.pack(fill=tk.X, padx=10, pady=(5, 10))
+
+        button_start = tk.Button(control_frame, text="Запуск", command=self.start_animation)
+        button_start.pack(pady=(10, 5), ipadx=10)
+        button_reset = tk.Button(control_frame, text="Сброс", command=self.reset)
+        button_reset.pack(ipadx=10)
+
+    def update_wheel(self):
+        self.n_spokes = self.n_spokes_var.get()
+        self.wheel_radius = self.radius_var.get()
+        self.speed = self.speed_var.get()
+        self.draw_wheel()
+
+    def draw_wheel(self):
+        self.canvas.delete("all")
+
+        center_x = self.wheel_center_x + self.speed * self.time
+        center_y = self.wheel_center_y
+
+        self.canvas.create_oval(
+            center_x - self.wheel_radius,
+            center_y - self.wheel_radius,
+            center_x + self.wheel_radius,
+            center_y + self.wheel_radius,
+            outline="black",
+            width=2,
+        )
+
+        for i in range(self.n_spokes):
+            angle = (2 * pi / self.n_spokes) * i + self.angle
+            x1 = center_x + self.wheel_radius * cos(angle)
+            y1 = center_y + self.wheel_radius * sin(angle)
+            self.canvas.create_line(center_x, center_y, x1, y1, fill="black", width=2)
+
+    def start_animation(self):
+        if not self.animation_id:
+            self.animate()
+
+    def animate(self):
+        self.time += 0.05
+        self.angle = self.speed * self.time / self.wheel_radius
+        self.draw_wheel()
+
+        if self.wheel_center_x + self.speed * self.time > WINDOW_WIDTH:
+            self.stop_animation()
+        else:
+            self.animation_id = self.canvas.after(50, self.animate)
+
+    def stop_animation(self):
+
+        if self.animation_id:
+            self.canvas.after_cancel(self.animation_id)
+            self.animation_id = None
+
+    def reset(self):
+        self.stop_animation()
+        self.time = 0
+        self.angle = 0
+        self.wheel_center_x = WINDOW_WIDTH // 2
+        self.draw_wheel()
+
+
+if __name__ == "__main__":
+    app = WheelApp()
+    app.root.mainloop()
